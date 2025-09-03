@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>People Memory Cards</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f0f4f8;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      color: #333;
+    }
+    .stats {
+      margin: 10px 0;
+      font-size: 18px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+      gap: 15px;
+      max-width: 600px;
+      width: 100%;
+      margin-top: 20px;
+    }
+    .card {
+      background-color: #fff;
+      border-radius: 8px;
+      perspective: 1000px;
+      cursor: pointer;
+    }
+    .card-inner {
+      width: 100%;
+      padding-top: 100%;
+      position: relative;
+      transition: transform 0.6s;
+      transform-style: preserve-3d;
+    }
+    .card.flipped .card-inner {
+      transform: rotateY(180deg);
+    }
+    .card-front, .card-back {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      backface-visibility: hidden;
+      border-radius: 8px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .card-front {
+      background: #d9e6f2;
+    }
+    .card-back {
+      background: #ffffff;
+      transform: rotateY(180deg);
+      flex-direction: column;
+    }
+    .card-back img {
+      width: 60%;
+      border-radius: 50%;
+    }
+    .card-back span {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #333;
+    }
+    button {
+      padding: 10px 20px;
+      margin-top: 15px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #007acc;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>People Memory Cards</h1>
+  <div class="stats">
+    Score: <span id="score">0</span> | Time: <span id="time">0</span>s
+  </div>
+  <div class="grid" id="gameGrid"></div>
+  <button onclick="startGame()">Restart</button>
+
+  <script>
+    const people = [
+      { name: "Alice", img: "https://randomuser.me/api/portraits/women/44.jpg" },
+      { name: "Bob", img: "https://randomuser.me/api/portraits/men/47.jpg" },
+      { name: "Clara", img: "https://randomuser.me/api/portraits/women/65.jpg" },
+      { name: "David", img: "https://randomuser.me/api/portraits/men/63.jpg" },
+      { name: "Eva", img: "https://randomuser.me/api/portraits/women/15.jpg" },
+      { name: "Frank", img: "https://randomuser.me/api/portraits/men/22.jpg" }
+    ];
+
+    let flippedCards = [];
+    let matched = 0;
+    let score = 0;
+    let timer;
+    let time = 0;
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function startGame() {
+      const grid = document.getElementById("gameGrid");
+      grid.innerHTML = "";
+      flippedCards = [];
+      matched = 0;
+      score = 0;
+      time = 0;
+      document.getElementById("score").textContent = score;
+      document.getElementById("time").textContent = time;
+
+      clearInterval(timer);
+      timer = setInterval(() => {
+        time++;
+        document.getElementById("time").textContent = time;
+      }, 1000);
+
+      let cards = [...people, ...people]; // duplicate for pairs
+      cards = shuffle(cards);
+
+      cards.forEach((person, index) => {
+        const card = document.createElement("div");
+        card.className = "card";
+        card.dataset.name = person.name;
+        card.innerHTML = `
+          <div class="card-inner">
+            <div class="card-front"></div>
+            <div class="card-back">
+              <img src="${person.img}" alt="${person.name}" />
+              <span>${person.name}</span>
+            </div>
+          </div>
+        `;
+        card.addEventListener("click", () => flipCard(card));
+        grid.appendChild(card);
+      });
+    }
+
+    function flipCard(card) {
+      if (flippedCards.length >= 2 || card.classList.contains("flipped") || card.classList.contains("matched")) return;
+      card.classList.add("flipped");
+      flippedCards.push(card);
+
+      if (flippedCards.length === 2) {
+        const [card1, card2] = flippedCards;
+        if (card1.dataset.name === card2.dataset.name) {
+          // Match!
+          card1.classList.add("matched");
+          card2.classList.add("matched");
+          matched += 2;
+          score += 10;
+          document.getElementById("score").textContent = score;
+          flippedCards = [];
+
+          if (matched === people.length * 2) {
+            clearInterval(timer);
+            setTimeout(() => alert("🎉 You won! Time: " + time + "s"), 300);
+          }
+        } else {
+          // No match
+          setTimeout(() => {
+            card1.classList.remove("flipped");
+            card2.classList.remove("flipped");
+            flippedCards = [];
+          }, 1000);
+        }
+      }
+    }
+
+    startGame();
+  </script>
+</body>
+</html>
